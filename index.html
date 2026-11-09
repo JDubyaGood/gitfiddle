@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>Gitfiddle — Jake’s Guitar App</title>
+<style>
+:root {
+  --bg:#0f1115; --surface:#181b22; --surface2:#22262f; --border:#2e3440;
+  --text:#e8eaed; --muted:#9aa0a6; --accent:#5b9cff; --accent2:#3dd68c;
+  --warn:#f5a524; --danger:#ff6b6b; --chord:#1e2430; --radius:14px;
+  --shadow:0 8px 24px rgba(0,0,0,.35); --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.45;-webkit-tap-highlight-color:transparent}
+body{min-height:100dvh}
+a{color:var(--accent);text-decoration:none}
+button{font:inherit;cursor:pointer;border:none;border-radius:10px;padding:.7rem 1rem;background:var(--accent);color:#061018;font-weight:600}
+button.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:active:not(:disabled){transform:scale(.98)}
+button.tap-big{width:100%;min-height:4.5rem;font-size:1.25rem;background:var(--surface2);color:var(--text);border:2px solid var(--accent2)}
+button.tap-big:active{background:rgba(61,214,140,.2)}
+button.toggle.on{background:rgba(61,214,140,.2);color:var(--accent2);border:1px solid var(--accent2)}
+select,input[type=number]{font:inherit;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:.55rem .7rem}
+header.app{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;background:rgba(15,17,21,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+header.app h1{font-size:1.05rem;margin:0;letter-spacing:.02em}
+header.app .brand{color:var(--accent2);font-weight:700}
+#backBtn{display:none;padding:.4rem .7rem;font-size:.9rem}
+main{max-width:720px;margin:0 auto;padding:1rem 1rem 3rem}
+.view{display:none}.view.active{display:block}
+.hero{background:linear-gradient(145deg,#1a2030,#141820);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem;box-shadow:var(--shadow)}
+.hero h2{margin:0 0 .35rem;font-size:1.35rem}
+.hero p{margin:0;color:var(--muted);font-size:.95rem}
+.song-list{display:grid;gap:.75rem}
+.song-card{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.1rem;color:var(--text);box-shadow:var(--shadow)}
+.song-card .meta{color:var(--muted);font-size:.85rem;margin-top:.25rem}
+.song-card .badge{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:rgba(61,214,140,.15);color:var(--accent2);padding:.2rem .45rem;border-radius:999px;margin-bottom:.35rem}
+.song-card .badge.next{background:rgba(91,156,255,.15);color:var(--accent)}
+.section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1rem}
+.section h3{margin:0 0 .85rem;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.chord-row{display:flex;flex-wrap:wrap;gap:.75rem}
+.chord-wrap{text-align:center}
+.prog-lines{display:grid;gap:.85rem}
+.prog-line{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem}
+.prog-line .hook{width:100%;color:var(--muted);font-size:.85rem;font-style:italic;margin-top:.15rem}
+.chord-box{min-width:3rem;padding:.55rem .7rem;border-radius:10px;background:var(--chord);border:1px solid var(--border);font-size:1.25rem;font-weight:700;text-align:center;transition:background .12s,border-color .12s,transform .12s}
+.chord-box.active{background:rgba(91,156,255,.25);border-color:var(--accent);transform:scale(1.06);color:#fff}
+.strum{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin-bottom:.5rem}
+.strum-beat{width:2.4rem;height:2.4rem;border-radius:8px;display:grid;place-items:center;font-weight:700;background:var(--surface2);border:1px solid var(--border)}
+.strum-beat.down{color:var(--accent)}.strum-beat.up{color:var(--accent2)}
+.note{color:var(--muted);font-size:.9rem;margin:.4rem 0 0}
+.tool-grid{display:grid;gap:.75rem}
+@media(min-width:560px){.tool-grid.two{grid-template-columns:1fr 1fr}}
+.controls{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:.75rem}
+.controls label{color:var(--muted);font-size:.85rem}
+.timer-display{font-variant-numeric:tabular-nums;font-size:3rem;font-weight:700;text-align:center;letter-spacing:.04em;margin:.5rem 0}
+.timer-display.running{color:var(--accent2)}.timer-display.done{color:var(--warn)}
+.progress-list{list-style:none;margin:0;padding:0}
+.progress-list li{display:flex;justify-content:space-between;gap:.5rem;padding:.45rem 0;border-bottom:1px solid var(--border);font-size:.9rem}
+.progress-list li:last-child{border-bottom:none}
+.progress-list .pair{font-weight:600}
+.progress-list .count{color:var(--accent2);font-variant-numeric:tabular-nums}
+.progress-list .date{color:var(--muted);font-size:.8rem}
+.empty{color:var(--muted);font-size:.9rem}
+.metro-display{font-size:2rem;font-weight:700;text-align:center;margin:.35rem 0 .6rem}
+.metro-pulse{width:18px;height:18px;border-radius:50%;margin:0 auto .75rem;background:var(--border);transition:background .05s,transform .05s}
+.metro-pulse.on{background:var(--accent2);transform:scale(1.25)}
+.bpm-row{display:flex;align-items:center;gap:.5rem;justify-content:center;flex-wrap:wrap}
+.bpm-row input[type=range]{width:min(220px,55vw);accent-color:var(--accent)}
+.play-hud{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;text-align:center;margin:.75rem 0;padding:.75rem;background:var(--surface2);border-radius:12px;border:1px solid var(--border)}
+.play-hud .val{font-size:1.6rem;font-weight:700}
+.play-hud .lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.play-hud .arrow{font-size:2rem;line-height:1;color:var(--accent2)}
+.yt-card{margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.yt-card:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.yt-card .yt-title{font-weight:600;margin:0 0 .35rem;font-size:.95rem}
+.yt-card .yt-tag{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--warn);background:rgba(245,165,36,.12);padding:.15rem .4rem;border-radius:6px;margin-bottom:.4rem}
+.yt-card .yt-tag.orig{color:var(--accent2);background:rgba(61,214,140,.12)}
+.yt-card .yt-tag.tech{color:var(--accent);background:rgba(91,156,255,.12)}
+.yt-embed{position:relative;width:100%;padding-top:56.25%;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.yt-embed iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.yt-fallback{display:inline-block;margin-top:.45rem;font-size:.85rem}
+.tech-block{margin-bottom:1.1rem;padding-bottom:1.1rem;border-bottom:1px solid var(--border)}
+.tech-block:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.tech-block h4{margin:0 0 .35rem;font-size:1rem}
+.tech-block .where{color:var(--muted);font-size:.9rem;margin:0 0 .65rem}
+footer.tiny{text-align:center;color:var(--muted);font-size:.75rem;margin-top:1.5rem}
+.guess{font-size:.8rem;color:var(--warn);margin-top:.5rem}
+</style>
+</head>
+<body>
+<header class="app">
+  <button type="button" id="backBtn" class="ghost" aria-label="Back to songs">← Songs</button>
+  <h1><span class="brand">Gitfiddle</span> <span id="headerSub" style="color:var(--muted);font-weight:500">Practice</span></h1>
+</header>
+<main>
+  <section id="view-list" class="view active" aria-label="Song list">
+    <div class="hero">
+      <h2>Your setlist</h2>
+      <p>Hear the rhythm, see the chord, tap the pulse — then play along.</p>
+    </div>
+    <div class="song-list" id="songList"></div>
+    <footer class="tiny">Offline play-along · YouTube needs network · progress saved on this device</footer>
+  </section>
+  <section id="view-song" class="view" aria-label="Song detail">
+    <div id="songDetail"></div>
+  </section>
+</main>
+<script>
+(function () {
+"use strict";
+
+var OPEN_HZ = [82.4069, 110.0, 146.832, 195.998, 246.942, 329.628];
+
+var CHORDS = {
+  D:  { name:"D",  frets:[-1,-1,0,2,3,2], fingers:[0,0,0,1,3,2] },
+  A:  { name:"A",  frets:[-1,0,2,2,2,0], fingers:[0,0,1,2,3,0] },
+  G:  { name:"G",  frets:[3,2,0,0,0,3], fingers:[2,1,0,0,0,3] },
+  Dm: { name:"Dm", frets:[-1,-1,0,2,3,1], fingers:[0,0,0,2,3,1] },
+  C:  { name:"C",  frets:[-1,3,2,0,1,0], fingers:[0,3,2,0,1,0] },
+  F:  { name:"F",  frets:[-1,-1,3,2,1,1], fingers:[0,0,3,2,1,1], tip:"mini-F (xx3211)" }
+};
+
+var PATTERNS = {
+  downs: { name:"All downs", steps:["D","D","D","D"] },
+  folk:  { name:"D-D-U-U-D-U", steps:["D","D","U","U","D","U"] }
+};
+
+/* Folk pattern maps onto 8 eighth-notes in a 4/4 bar:
+   1  &  2  &  3  &  4  &
+   D     D  U  U  D  U     (rests on 1+ and 3) */
+var FOLK_EIGHTHS = ["D", null, "D", "U", "U", null, "D", "U"];
+
+var SONGS = [
+  {
+    id: "son-of-a-gun",
+    title: "One Son-Of-A-Gun Of A Gun",
+    artist: "Barry Sadler (1966)",
+    badge: "First song",
+    badgeClass: "badge",
+    key: "D major (verses 1–2)",
+    capo: "None",
+    defaultBpm: 60,
+    songTempo: 120,
+    chords: ["D","A","G","Dm"],
+    note: "Beginner loop only — verses 1–2. Key-change verses deferred.",
+    timingNote: "GUESS: Cifra Club shows chord letters only (no durations). Each chord token = 2 beats; a lone chord on a line = 4 beats so the phrase can breathe. Not verified against a scored chart.",
+    youtubeOriginal: {
+      id: "PX6RNlU-qu4",
+      title: "7 One Son-of-a-Gun of a Gun.wmv",
+      label: "Original recording (1966 upload)"
+    },
+    tutorials: [
+      { id:"PX6RNlU-qu4", title:"7 One Son-of-a-Gun of a Gun.wmv", tag:"Original — no song-specific guitar tutorial found", tagClass:"orig" },
+      { id:"tR4qDJwuTio", title:"EASY guitar chords EVERYONE should know - beginner guitar chord lesson", tag:"General — D / G / A shapes (also Em)", tagClass:"" },
+      { id:"Md667ZuDMd0", title:"Learn D Minor Chord Guitar [Guided Practice + Alternative Shape]", tag:"General — Dm shape used in this song", tagClass:"" },
+      { id:"qXK_If0QzDM", title:"One Minute Changes (Guitar Lesson BC-115) Guitar for beginners Stage 1", tag:"General — chord-change drill method", tagClass:"" },
+      { id:"26MKHpM3BfY", title:"Acoustic Guitar Lesson 3 - Rhythm and Strumming Basics for Absolute Beginners", tag:"General — beginner strumming / pulse", tagClass:"" }
+    ],
+    techniques: [
+      {
+        name: "Basic downstroke strumming",
+        where: "Whole beginner loop — steady quarter-note downs matching the folk/vocal pulse (no fancy picking on the chart).",
+        videos: [
+          { id:"26MKHpM3BfY", title:"Acoustic Guitar Lesson 3 - Rhythm and Strumming Basics for Absolute Beginners" }
+        ]
+      },
+      {
+        name: "Open-chord switching (D ↔ A ↔ G ↔ Dm)",
+        where: "Every line of verses 1–2; D↔A and D↔G are the high-traffic changes.",
+        videos: [
+          { id:"qXK_If0QzDM", title:"One Minute Changes (Guitar Lesson BC-115) Guitar for beginners Stage 1" },
+          { id:"94bp9XLN5kw", title:"The Beginner Mistake That's Killing Your Chord Changes" }
+        ]
+      }
+    ],
+    progression: [
+      { chords:["D","A","D"], beats:[2,2,2], hook:"… one son-of-a-gun, of a gun" },
+      { chords:["G","D","G"], beats:[2,2,2], hook:"… this AR-15" },
+      { chords:["D"], beats:[4], hook:"… hard and she's mean" },
+      { chords:["Dm","G"], beats:[2,2], hook:"… love or fun" },
+      { chords:["D","G"], beats:[2,2], hook:"… AR-15" },
+      { chords:["A"], beats:[4], hook:"… part of my team" },
+      { chords:["D","A","D","G","D"], beats:[2,2,2,2,2], hook:"… one son-of-a-gun, of a gun" }
+    ],
+    drillPairs: [["D","A"],["D","G"],["A","G"],["D","Dm"],["Dm","G"]]
+  },
+  {
+    id: "green-berets",
+    title: "Ballad of the Green Berets",
+    artist: "Barry Sadler (1966)",
+    badge: "Next up",
+    badgeClass: "badge next",
+    key: "C major",
+    capo: "None",
+    defaultBpm: 60,
+    songTempo: 170,
+    chords: ["C","G","F"],
+    note: "Same four-line map for verse and refrain. Mini-F is fine.",
+    timingNote: "Based on Bell&CoMusic 4/4 march feel (original ♩≈170). Each lyric line treated as 2 bars (8 beats): C–G–C lines = 4+2+2; two-chord lines = 4+4. Chord placement aligned to Song Tabs / Bell&Co lyric markers — durations are reasoned guesses, not from an official score.",
+    youtubeOriginal: {
+      id: "BugBwt2ESpo",
+      title: "The Ballad Of The Green Berets",
+      label: "Original recording (RCA/Legacy Topic)"
+    },
+    tutorials: [
+      { id:"qx00SHLkt2w", title:"How to Play \"The Ballad of the Green Berets\" by Sgt. Barry Sadler (Guitar)", tag:"Song tutorial", tagClass:"" },
+      { id:"BugBwt2ESpo", title:"The Ballad Of The Green Berets", tag:"Original recording", tagClass:"orig" },
+      { id:"PvSYgDNxaS0", title:"Guitar for Beginners | Chord Progression Practice in C Major | Lesson 3/3", tag:"General — C-major progression practice", tagClass:"" },
+      { id:"ij-DX2NJCEU", title:"How to Play the F Chord on Guitar | Easiest Beginner Free Online Guitar Lesson", tag:"General — easy F (needed here)", tagClass:"" },
+      { id:"26MKHpM3BfY", title:"Acoustic Guitar Lesson 3 - Rhythm and Strumming Basics for Absolute Beginners", tag:"General — march/downstroke foundation", tagClass:"" }
+    ],
+    techniques: [
+      {
+        name: "March-style downstroke strum",
+        where: "Whole song — straight downs on the beat for that military-ballad feel (Song Tabs recommends this first).",
+        videos: [
+          { id:"26MKHpM3BfY", title:"Acoustic Guitar Lesson 3 - Rhythm and Strumming Basics for Absolute Beginners" }
+        ]
+      },
+      {
+        name: "Folk pattern D-D-U-U-D-U (optional)",
+        where: "Alternate strum once downs are steady — same 4/4 grid, added upstrokes on the off-beats.",
+        videos: [
+          { id:"7ZCs51tAaiQ", title:"Guitar tutorial | Free Guitar Strumming Course Pattern 3 8th Strumming Downs & Ups" },
+          { id:"vpsP3u3KnyQ", title:"Beginners Guitar Strumming Pattern 2 - 8th Strumming - Beginners Course #L202" }
+        ]
+      },
+      {
+        name: "Mini-F / easy F chord",
+        where: "The F in each verse (“…mean…say” / “…test today”) — use xx3211 until full barre is ready.",
+        videos: [
+          { id:"ij-DX2NJCEU", title:"How to Play the F Chord on Guitar | Easiest Beginner Free Online Guitar Lesson" },
+          { id:"DWre8gNwXQ8", title:"How To Play the Easiest F Chord On Guitar - Guvna Guitars" }
+        ]
+      },
+      {
+        name: "C ↔ G chord changes",
+        where: "Most frequent switch in every line of the song.",
+        videos: [
+          { id:"qXK_If0QzDM", title:"One Minute Changes (Guitar Lesson BC-115) Guitar for beginners Stage 1" },
+          { id:"94bp9XLN5kw", title:"The Beginner Mistake That's Killing Your Chord Changes" }
+        ]
+      }
+    ],
+    progression: [
+      { chords:["C","G","C"], beats:[4,2,2], hook:"… soldiers … sky" },
+      { chords:["G","C"], beats:[4,4], hook:"… men … die" },
+      { chords:["F","C"], beats:[4,4], hook:"… mean … say" },
+      { chords:["G","C"], beats:[4,4], hook:"… men … Green Beret" }
+    ],
+    drillPairs: [["C","G"],["C","F"],["F","G"],["G","C"]]
+  }
+];
+
+var STORAGE_KEY = "gitfiddle.drillHistory.v1";
+var currentSong = null;
+var drillState = { running:false, left:60, timer:null, pair:null, songId:null };
+var metro = { ctx:null, ticking:false, next:0, bpm:60, timer:null, beat:0 };
+var play = {
+  running:false, bpm:60, pattern:"downs", loop:true,
+  events:[], cursor:0, timer:null, song:null,
+  chordIndex:0, beatInBar:0, strumLabel:"—"
+};
+
+function ytUrl(id){ return "https://www.youtube.com/watch?v=" + id; }
+function ytEmbed(id){ return "https://www.youtube-nocookie.com/embed/" + id; }
+
+function chordSVG(chordId){
+  var c = CHORDS[chordId]; if(!c) return "";
+  var w=90,h=118,left=18,top=28,right=72,bottom=100,strings=6,frets=4;
+  function sx(i){ return left + (i*(right-left)/(strings-1)); }
+  function sy(f){ return top + (f*(bottom-top)/frets); }
+  var p=[];
+  p.push('<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="'+c.name+' chord">');
+  p.push('<rect x="0" y="0" width="'+w+'" height="'+h+'" rx="8" fill="#1e2430"/>');
+  p.push('<text x="'+(w/2)+'" y="14" text-anchor="middle" fill="#e8eaed" font-size="12" font-weight="700" font-family="system-ui,sans-serif">'+c.name+'</text>');
+  p.push('<line x1="'+left+'" y1="'+top+'" x2="'+right+'" y2="'+top+'" stroke="#e8eaed" stroke-width="3" stroke-linecap="round"/>');
+  var f,s;
+  for(f=1;f<=frets;f++) p.push('<line x1="'+left+'" y1="'+sy(f)+'" x2="'+right+'" y2="'+sy(f)+'" stroke="#5a6270" stroke-width="1"/>');
+  for(s=0;s<strings;s++){
+    var x=sx(s), fr=c.frets[s];
+    p.push('<line x1="'+x+'" y1="'+top+'" x2="'+x+'" y2="'+bottom+'" stroke="#9aa0a6" stroke-width="'+(s===0||s===5?1.6:1.2)+'"/>');
+    if(fr===-1) p.push('<text x="'+x+'" y="'+(top-6)+'" text-anchor="middle" fill="#ff6b6b" font-size="10" font-weight="700" font-family="system-ui,sans-serif">×</text>');
+    else if(fr===0) p.push('<circle cx="'+x+'" cy="'+(top-8)+'" r="3.2" fill="none" stroke="#3dd68c" stroke-width="1.5"/>');
+  }
+  for(s=0;s<strings;s++){
+    var fret=c.frets[s];
+    if(fret>0){
+      var cx=sx(s), cy=(sy(fret-1)+sy(fret))/2;
+      p.push('<circle cx="'+cx+'" cy="'+cy+'" r="6.5" fill="#5b9cff"/>');
+      if(c.fingers[s]>0) p.push('<text x="'+cx+'" y="'+(cy+3.5)+'" text-anchor="middle" fill="#061018" font-size="9" font-weight="700" font-family="system-ui,sans-serif">'+c.fingers[s]+'</text>');
+    }
+  }
+  if(c.tip) p.push('<text x="'+(w/2)+'" y="'+(h-4)+'" text-anchor="middle" fill="#9aa0a6" font-size="8" font-family="system-ui,sans-serif">'+c.tip+'</text>');
+  p.push('</svg>');
+  return p.join('');
+}
+
+function loadHistory(){ try{ var r=localStorage.getItem(STORAGE_KEY); return r?JSON.parse(r):[]; }catch(e){ return []; } }
+function saveHistory(entries){ localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
+function addHistoryEntry(entry){ var all=loadHistory(); all.unshift(entry); if(all.length>100) all=all.slice(0,100); saveHistory(all); }
+function historyForSong(songId){ return loadHistory().filter(function(e){ return e.songId===songId; }); }
+function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function ensureAudio(){
+  if(!metro.ctx){ var Ctx=window.AudioContext||window.webkitAudioContext; metro.ctx=new Ctx(); }
+  if(metro.ctx.state==='suspended') metro.ctx.resume();
+  return metro.ctx;
+}
+
+/* ---------- Karplus-Strong plucked string ---------- */
+function pluckString(ctx, freq, when, velocity, duration){
+  var sr=ctx.sampleRate;
+  var n=Math.max(2, Math.floor(sr/freq));
+  var buf=ctx.createBuffer(1, Math.floor(sr*(duration||2.2)), sr);
+  var data=buf.getChannelData(0);
+  var i, noise=[];
+  for(i=0;i<n;i++) noise[i]=(Math.random()*2-1)*velocity;
+  var prev=0;
+  for(i=0;i<data.length;i++){
+    var idx=i%n;
+    var avg=0.496*(noise[idx]+prev);
+    prev=noise[idx];
+    noise[idx]=avg;
+    data[i]=avg;
+  }
+  var src=ctx.createBufferSource();
+  src.buffer=buf;
+  var filter=ctx.createBiquadFilter();
+  filter.type='lowpass';
+  filter.frequency.value=Math.min(4200, freq*8);
+  var gain=ctx.createGain();
+  gain.gain.setValueAtTime(velocity, when);
+  gain.gain.exponentialRampToValueAtTime(0.001, when+(duration||2.2));
+  src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  src.start(when);
+  src.stop(when+(duration||2.2)+0.05);
+}
+
+function strumChord(chordId, when, down, velocity){
+  var c=CHORDS[chordId]; if(!c) return;
+  var ctx=ensureAudio();
+  var order=[];
+  var s;
+  for(s=0;s<6;s++) if(c.frets[s]>=0) order.push(s);
+  if(!down) order.reverse();
+  var vel=velocity*(down?1:0.62);
+  for(var i=0;i<order.length;i++){
+    var si=order[i];
+    var fret=c.frets[si];
+    var freq=OPEN_HZ[si]*Math.pow(2, fret/12);
+    var t=when + i*0.0045;
+    var stringVel=vel * (0.75 + 0.25*(down? (i/Math.max(1,order.length-1)) : (1-i/Math.max(1,order.length-1))));
+    pluckString(ctx, freq, t, stringVel*0.55, 2.4);
+  }
+}
+
+function clickSound(time, accent){
+  var ctx=ensureAudio();
+  var osc=ctx.createOscillator();
+  var gain=ctx.createGain();
+  osc.type='square';
+  osc.frequency.value=accent?1400:900;
+  gain.gain.setValueAtTime(accent?0.16:0.1, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time+0.05);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(time); osc.stop(time+0.06);
+}
+
+function tapClick(){
+  var ctx=ensureAudio();
+  var t=ctx.currentTime+0.01;
+  clickSound(t, true);
+  var el=document.getElementById('tapFlash');
+  if(el){ el.classList.add('on'); setTimeout(function(){ el.classList.remove('on'); }, 90); }
+}
+
+/* ---------- Play-along scheduler ---------- */
+function flattenProgression(song){
+  var out=[], globalChord=0, line,i;
+  for(line=0; line<song.progression.length; line++){
+    var row=song.progression[line];
+    for(i=0;i<row.chords.length;i++){
+      out.push({
+        chord: row.chords[i],
+        beats: row.beats[i],
+        line: line,
+        localIndex: i,
+        globalIndex: globalChord,
+        hook: row.hook||''
+      });
+      globalChord++;
+    }
+  }
+  return out;
+}
+
+function buildPlayEvents(song){
+  var bpm=play.bpm;
+  var beatSec=60/bpm;
+  var events=[];
+  var t=0;
+  // 4-beat count-in
+  for(var c=0;c<4;c++){
+    events.push({ type:'click', t:t, accent:c===0, beat:c+1, countIn:true });
+    t+=beatSec;
+  }
+  var flat=flattenProgression(song);
+  var absBeat=0;
+  for(var i=0;i<flat.length;i++){
+    var step=flat[i];
+    for(var b=0;b<step.beats;b++){
+      var beatInBar=absBeat%4;
+      if(play.pattern==='downs'){
+        events.push({
+          type:'strum', t:t, chord:step.chord, down:true,
+          chordIndex:step.globalIndex, line:step.line, localIndex:step.localIndex,
+          beat:beatInBar+1, absBeat:absBeat, label:'↓'
+        });
+      } else {
+        // folk D-D-U-U-D-U over eighths within each beat pair... apply pattern per 4-beat bar
+        var eighthBase=beatInBar*2;
+        for(var e=0;e<2;e++){
+          var sym=FOLK_EIGHTHS[eighthBase+e];
+          if(sym){
+            events.push({
+              type:'strum', t:t+e*(beatSec/2), chord:step.chord, down:sym==='D',
+              chordIndex:step.globalIndex, line:step.line, localIndex:step.localIndex,
+              beat:beatInBar+1, absBeat:absBeat, label:sym==='D'?'↓':'↑'
+            });
+          }
+        }
+      }
+      events.push({ type:'beatmark', t:t, beat:beatInBar+1, chordIndex:step.globalIndex, chord:step.chord });
+      t+=beatSec;
+      absBeat++;
+    }
+  }
+  events.push({ type:'end', t:t });
+  events.sort(function(a,b){ return a.t-b.t; });
+  return events;
+}
+
+function highlightChord(index){
+  var boxes=document.querySelectorAll('.chord-box[data-ci]');
+  for(var i=0;i<boxes.length;i++){
+    if(parseInt(boxes[i].getAttribute('data-ci'),10)===index) boxes[i].classList.add('active');
+    else boxes[i].classList.remove('active');
+  }
+}
+
+function updatePlayHud(ev){
+  var chordEl=document.getElementById('hudChord');
+  var arrowEl=document.getElementById('hudArrow');
+  var beatEl=document.getElementById('hudBeat');
+  if(!chordEl) return;
+  if(ev.countIn){
+    chordEl.textContent='Count';
+    arrowEl.textContent='—';
+    beatEl.textContent=String(ev.beat);
+    return;
+  }
+  if(ev.chord) chordEl.textContent=ev.chord;
+  if(ev.label) arrowEl.textContent=ev.label;
+  if(ev.beat) beatEl.textContent=String(ev.beat);
+}
+
+function stopPlayAlong(){
+  play.running=false;
+  if(play.timer){ clearTimeout(play.timer); play.timer=null; }
+  var btn=document.getElementById('playToggle');
+  if(btn) btn.textContent='Play along';
+  highlightChord(-1);
+  var chordEl=document.getElementById('hudChord');
+  var arrowEl=document.getElementById('hudArrow');
+  var beatEl=document.getElementById('hudBeat');
+  if(chordEl) chordEl.textContent='—';
+  if(arrowEl) arrowEl.textContent='—';
+  if(beatEl) beatEl.textContent='—';
+}
+
+function startPlayAlong(song){
+  stopMetronome();
+  stopPlayAlong();
+  ensureAudio();
+  play.song=song;
+  play.running=true;
+  play.events=buildPlayEvents(song);
+  play.cursor=0;
+  var btn=document.getElementById('playToggle');
+  if(btn) btn.textContent='Stop';
+  var startAt=ensureAudio().currentTime+0.08;
+  schedulePlay(startAt);
+}
+
+function schedulePlay(origin){
+  if(!play.running) return;
+  var ctx=ensureAudio();
+  var look=0.12;
+  while(play.cursor<play.events.length && play.events[play.cursor].t+origin < ctx.currentTime+look){
+    var ev=play.events[play.cursor++];
+    var when=origin+ev.t;
+    if(ev.type==='click'){
+      clickSound(when, ev.accent);
+      queueHudLater(when, ev);
+    } else if(ev.type==='strum'){
+      strumChord(ev.chord, when, ev.down, 0.9);
+      queueHudLater(when, ev);
+      queueHighlightLater(when, ev.chordIndex);
+    } else if(ev.type==='beatmark'){
+      // hud beat already from strum/count-in
+    } else if(ev.type==='end'){
+      var delay=Math.max(0,(when-ctx.currentTime)*1000);
+      play.timer=setTimeout(function(){
+        if(!play.running) return;
+        if(play.loop) startPlayAlong(play.song);
+        else stopPlayAlong();
+      }, delay+30);
+      return;
+    }
+  }
+  play.timer=setTimeout(function(){ schedulePlay(origin); }, 25);
+}
+
+function queueHudLater(when, ev){
+  var ctx=ensureAudio();
+  var ms=Math.max(0,(when-ctx.currentTime)*1000);
+  setTimeout(function(){ if(play.running) updatePlayHud(ev); }, ms);
+}
+function queueHighlightLater(when, idx){
+  var ctx=ensureAudio();
+  var ms=Math.max(0,(when-ctx.currentTime)*1000);
+  setTimeout(function(){ if(play.running) highlightChord(idx); }, ms);
+}
+
+/* ---------- Metronome ---------- */
+function setBpmUI(v, song){
+  play.bpm=Math.max(40, Math.min(song?song.songTempo:140, v));
+  metro.bpm=play.bpm;
+  var range=document.getElementById('playBpmRange');
+  var label=document.getElementById('playBpmLabel');
+  var mrange=document.getElementById('bpmRange');
+  var mlabel=document.getElementById('bpmLabel');
+  if(range) range.value=String(play.bpm);
+  if(label) label.textContent=String(play.bpm);
+  if(mrange) mrange.value=String(play.bpm);
+  if(mlabel) mlabel.textContent=String(play.bpm);
+}
+
+function startMetronome(){
+  ensureAudio();
+  metro.ticking=true; metro.beat=0; metro.next=metro.ctx.currentTime+0.05;
+  var btn=document.getElementById('metroToggle'); if(btn) btn.textContent='Stop';
+  scheduleMetro();
+}
+function scheduleMetro(){
+  if(!metro.ticking) return;
+  var ctx=metro.ctx, lookAhead=0.1, interval=60/metro.bpm;
+  while(metro.next<ctx.currentTime+lookAhead){
+    clickSound(metro.next, metro.beat%4===0);
+    flashPulse();
+    metro.next+=interval; metro.beat+=1;
+  }
+  metro.timer=setTimeout(scheduleMetro, 25);
+}
+function flashPulse(){
+  var el=document.getElementById('metroPulse'); if(!el) return;
+  el.classList.add('on'); setTimeout(function(){ el.classList.remove('on'); }, 80);
+}
+function stopMetronome(){
+  metro.ticking=false;
+  if(metro.timer){ clearTimeout(metro.timer); metro.timer=null; }
+  var btn=document.getElementById('metroToggle'); if(btn) btn.textContent='Start';
+  var el=document.getElementById('metroPulse'); if(el) el.classList.remove('on');
+}
+
+/* ---------- Views ---------- */
+function showList(){
+  stopDrill(true); stopMetronome(); stopPlayAlong();
+  currentSong=null;
+  document.getElementById('view-list').classList.add('active');
+  document.getElementById('view-song').classList.remove('active');
+  document.getElementById('backBtn').style.display='none';
+  document.getElementById('headerSub').textContent='Practice';
+}
+function showSong(id){
+  stopDrill(true); stopMetronome(); stopPlayAlong();
+  var song=null;
+  for(var i=0;i<SONGS.length;i++) if(SONGS[i].id===id){ song=SONGS[i]; break; }
+  if(!song) return;
+  currentSong=song;
+  play.bpm=song.defaultBpm; metro.bpm=song.defaultBpm; play.pattern='downs'; play.loop=true;
+  document.getElementById('view-list').classList.remove('active');
+  document.getElementById('view-song').classList.add('active');
+  document.getElementById('backBtn').style.display='inline-block';
+  document.getElementById('headerSub').textContent=song.title;
+  renderSong(song);
+}
+function renderSongList(){
+  document.getElementById('songList').innerHTML = SONGS.map(function(s){
+    return '<button type="button" class="song-card" data-song="'+s.id+'">'+
+      '<div class="'+s.badgeClass+'">'+s.badge+'</div>'+
+      '<div><strong>'+escapeHtml(s.title)+'</strong></div>'+
+      '<div class="meta">'+escapeHtml(s.artist)+' · '+escapeHtml(s.key)+'</div>'+
+      '<div class="meta">Chords: '+s.chords.join(', ')+'</div></button>';
+  }).join('');
+}
+
+function renderYtCard(v){
+  var tag=v.tag?('<div class="yt-tag '+(v.tagClass||'')+'">'+escapeHtml(v.tag)+'</div>'):'';
+  return '<div class="yt-card">'+tag+
+    '<div class="yt-title">'+escapeHtml(v.title)+'</div>'+
+    '<div class="yt-embed"><iframe loading="lazy" title="'+escapeHtml(v.title)+'" src="'+ytEmbed(v.id)+'" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>'+
+    '<a class="yt-fallback" href="'+ytUrl(v.id)+'" target="_blank" rel="noopener">Open on YouTube ↗</a></div>';
+}
+
+function renderSong(song){
+  var html=[], ci=0, line, i;
+  html.push('<div class="hero"><h2>'+escapeHtml(song.title)+'</h2>');
+  html.push('<p>'+escapeHtml(song.artist)+' · Key: '+escapeHtml(song.key)+' · Capo: '+escapeHtml(song.capo)+'</p>');
+  if(song.note) html.push('<p style="margin-top:.5rem">'+escapeHtml(song.note)+'</p>');
+  html.push('</div>');
+
+  /* Hear original */
+  html.push('<div class="section"><h3>Hear the original</h3>');
+  html.push('<p class="note" style="margin-top:0">Listen once for the vocal rhythm before you play along.</p>');
+  html.push(renderYtCard({ id:song.youtubeOriginal.id, title:song.youtubeOriginal.title, tag:song.youtubeOriginal.label, tagClass:'orig' }));
+  html.push('</div>');
+
+  /* Chord shapes */
+  html.push('<div class="section"><h3>Chord shapes</h3><div class="chord-row">');
+  song.chords.forEach(function(cid){ html.push('<div class="chord-wrap">'+chordSVG(cid)+'</div>'); });
+  html.push('</div></div>');
+
+  /* Progression with data-ci for highlight */
+  html.push('<div class="section"><h3>Progression (beginner loop)</h3><div class="prog-lines">');
+  for(line=0; line<song.progression.length; line++){
+    var row=song.progression[line];
+    html.push('<div class="prog-line">');
+    for(i=0;i<row.chords.length;i++){
+      html.push('<span class="chord-box" data-ci="'+ci+'">'+escapeHtml(row.chords[i])+
+        '<span style="display:block;font-size:.65rem;font-weight:500;color:var(--muted)">'+row.beats[i]+' beats</span></span>');
+      ci++;
+    }
+    if(row.hook) html.push('<div class="hook">'+escapeHtml(row.hook)+'</div>');
+    html.push('</div>');
+  }
+  html.push('</div><p class="guess">'+escapeHtml(song.timingNote)+'</p></div>');
+
+  /* Play-along */
+  html.push('<div class="section"><h3>Play-along (synthesized guitar)</h3>');
+  html.push('<div class="play-hud">');
+  html.push('<div><div class="lbl">Chord</div><div class="val" id="hudChord">—</div></div>');
+  html.push('<div><div class="lbl">Strum</div><div class="arrow" id="hudArrow">—</div></div>');
+  html.push('<div><div class="lbl">Beat</div><div class="val" id="hudBeat">—</div></div>');
+  html.push('</div>');
+  html.push('<div class="controls">');
+  html.push('<button type="button" id="playToggle">Play along</button>');
+  html.push('<button type="button" id="patternToggle" class="secondary toggle">Pattern: downs</button>');
+  html.push('<button type="button" id="loopToggle" class="secondary toggle on">Loop: on</button>');
+  html.push('</div>');
+  html.push('<div class="bpm-row">');
+  html.push('<button type="button" id="playBpmDown" class="secondary">−</button>');
+  html.push('<input type="range" id="playBpmRange" min="40" max="'+song.songTempo+'" value="'+song.defaultBpm+'">');
+  html.push('<button type="button" id="playBpmUp" class="secondary">+</button>');
+  html.push('</div>');
+  html.push('<div class="metro-display" style="font-size:1.25rem;margin-top:.5rem"><span id="playBpmLabel">'+song.defaultBpm+'</span> BPM <span style="color:var(--muted);font-weight:500;font-size:.85rem">(original ~'+song.songTempo+')</span></div>');
+  html.push('<p class="note">4-beat count-in, then Karplus–Strong strums using the diagram voicings. Start slow (~60), then nudge up.</p>');
+  html.push('</div>');
+
+  /* Strum diagram */
+  html.push('<div class="section"><h3>Strum pattern</h3>');
+  html.push('<p class="note" style="margin-top:0"><strong>All downs</strong></p><div class="strum">');
+  PATTERNS.downs.steps.forEach(function(b){ html.push('<span class="strum-beat down">'+b+'</span>'); });
+  html.push('</div>');
+  html.push('<p class="note"><strong>D-D-U-U-D-U</strong> (on 1, 2, 2+, 3+, 4, 4+)</p><div class="strum">');
+  PATTERNS.folk.steps.forEach(function(b){ html.push('<span class="strum-beat '+(b==='U'?'up':'down')+'">'+b+'</span>'); });
+  html.push('</div></div>');
+
+  /* Tap-along */
+  html.push('<div class="section"><h3>Tap-along</h3>');
+  html.push('<div class="metro-pulse" id="tapFlash" aria-hidden="true"></div>');
+  html.push('<button type="button" class="tap-big" id="tapBtn">Tap the beat</button>');
+  html.push('<p class="note">Hit this on every pulse while listening to the original — feel 1-2-3-4 before fretting anything.</p>');
+  html.push('</div>');
+
+  /* Tools: drill + metro */
+  html.push('<div class="tool-grid two">');
+  html.push('<div class="section"><h3>1-minute chord changes</h3>');
+  html.push('<div class="controls"><label for="pairSelect">Pair</label><select id="pairSelect">');
+  song.drillPairs.forEach(function(pair, idx){ html.push('<option value="'+idx+'">'+pair[0]+' ↔ '+pair[1]+'</option>'); });
+  html.push('</select></div>');
+  html.push('<div id="timerDisplay" class="timer-display">1:00</div>');
+  html.push('<div class="controls"><button type="button" id="drillStart">Start 60s</button><button type="button" id="drillReset" class="secondary">Reset</button></div>');
+  html.push('<div id="drillResult" style="display:none"><div class="controls"><label for="changeCount">Clean changes</label><input type="number" id="changeCount" min="0" max="999" value="0" style="width:5rem"><button type="button" id="saveDrill">Save</button></div></div>');
+  html.push('<h3 style="margin-top:1rem">Progress</h3><ul class="progress-list" id="progressList"></ul></div>');
+
+  html.push('<div class="section"><h3>Metronome</h3>');
+  html.push('<div class="metro-pulse" id="metroPulse" aria-hidden="true"></div>');
+  html.push('<div class="metro-display"><span id="bpmLabel">'+song.defaultBpm+'</span> BPM</div>');
+  html.push('<div class="bpm-row"><button type="button" id="bpmDown" class="secondary">−</button><input type="range" id="bpmRange" min="40" max="'+song.songTempo+'" value="'+song.defaultBpm+'"><button type="button" id="bpmUp" class="secondary">+</button></div>');
+  html.push('<div class="controls" style="justify-content:center;margin-top:.75rem"><button type="button" id="metroToggle">Start</button></div>');
+  html.push('<p class="note">Click track only — use Play-along when you want to hear the chords.</p></div>');
+  html.push('</div>');
+
+  /* Tutorials */
+  html.push('<div class="section"><h3>Tutorials</h3>');
+  song.tutorials.forEach(function(v){ html.push(renderYtCard(v)); });
+  html.push('</div>');
+
+  /* Techniques */
+  html.push('<div class="section"><h3>Techniques</h3>');
+  song.techniques.forEach(function(tech){
+    html.push('<div class="tech-block">');
+    html.push('<h4>'+escapeHtml(tech.name)+'</h4>');
+    html.push('<p class="where">'+escapeHtml(tech.where)+'</p>');
+    tech.videos.forEach(function(v){
+      html.push(renderYtCard({ id:v.id, title:v.title, tag:'Technique lesson', tagClass:'tech' }));
+    });
+    html.push('</div>');
+  });
+  html.push('</div>');
+
+  document.getElementById('songDetail').innerHTML=html.join('');
+  wireSongControls(song);
+  renderProgress(song.id);
+}
+
+function wireSongControls(song){
+  document.getElementById('playToggle').addEventListener('click', function(){
+    if(play.running) stopPlayAlong(); else startPlayAlong(song);
+  });
+  document.getElementById('patternToggle').addEventListener('click', function(){
+    play.pattern = play.pattern==='downs' ? 'folk' : 'downs';
+    this.textContent = 'Pattern: '+(play.pattern==='downs'?'downs':'D-D-U-U-D-U');
+    this.classList.toggle('on', play.pattern==='folk');
+    if(play.running) startPlayAlong(song);
+  });
+  document.getElementById('loopToggle').addEventListener('click', function(){
+    play.loop=!play.loop;
+    this.textContent='Loop: '+(play.loop?'on':'off');
+    this.classList.toggle('on', play.loop);
+  });
+  document.getElementById('playBpmRange').addEventListener('input', function(e){
+    setBpmUI(parseInt(e.target.value,10), song);
+    if(play.running) startPlayAlong(song);
+  });
+  document.getElementById('playBpmDown').addEventListener('click', function(){ setBpmUI(play.bpm-2, song); if(play.running) startPlayAlong(song); });
+  document.getElementById('playBpmUp').addEventListener('click', function(){ setBpmUI(play.bpm+2, song); if(play.running) startPlayAlong(song); });
+  document.getElementById('tapBtn').addEventListener('click', tapClick);
+
+  document.getElementById('drillStart').addEventListener('click', function(){ startDrill(song); });
+  document.getElementById('drillReset').addEventListener('click', function(){ stopDrill(true); });
+  document.getElementById('saveDrill').addEventListener('click', function(){ saveDrill(song); });
+  document.getElementById('bpmRange').addEventListener('input', function(e){ setBpmUI(parseInt(e.target.value,10), song); });
+  document.getElementById('bpmDown').addEventListener('click', function(){ setBpmUI(play.bpm-2, song); });
+  document.getElementById('bpmUp').addEventListener('click', function(){ setBpmUI(play.bpm+2, song); });
+  document.getElementById('metroToggle').addEventListener('click', function(){
+    if(metro.ticking) stopMetronome(); else { stopPlayAlong(); startMetronome(); }
+  });
+}
+
+function renderProgress(songId){
+  var list=document.getElementById('progressList'); if(!list) return;
+  var entries=historyForSong(songId);
+  if(!entries.length){ list.innerHTML='<li class="empty">No drills saved yet — finish a 60s run and log your count.</li>'; return; }
+  list.innerHTML=entries.slice(0,12).map(function(e){
+    return '<li><span><span class="pair">'+escapeHtml(e.pair)+'</span> <span class="date">'+escapeHtml(e.date)+'</span></span><span class="count">'+e.count+'</span></li>';
+  }).join('');
+}
+
+function formatTime(sec){ return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'); }
+function startDrill(song){
+  if(drillState.running) return;
+  var sel=document.getElementById('pairSelect');
+  var pair=song.drillPairs[parseInt(sel.value,10)];
+  drillState.running=true; drillState.left=60; drillState.pair=pair; drillState.songId=song.id;
+  var display=document.getElementById('timerDisplay');
+  document.getElementById('drillResult').style.display='none';
+  display.className='timer-display running'; display.textContent=formatTime(60);
+  document.getElementById('drillStart').disabled=true; sel.disabled=true;
+  drillState.timer=setInterval(function(){
+    drillState.left-=1; display.textContent=formatTime(Math.max(0,drillState.left));
+    if(drillState.left<=0){
+      clearInterval(drillState.timer); drillState.timer=null; drillState.running=false;
+      display.className='timer-display done'; display.textContent='0:00';
+      document.getElementById('drillResult').style.display='block';
+      document.getElementById('changeCount').value='0';
+      document.getElementById('changeCount').focus();
+      document.getElementById('drillStart').disabled=false; sel.disabled=false;
+    }
+  },1000);
+}
+function stopDrill(resetDisplay){
+  if(drillState.timer){ clearInterval(drillState.timer); drillState.timer=null; }
+  drillState.running=false; drillState.left=60;
+  var display=document.getElementById('timerDisplay');
+  var result=document.getElementById('drillResult');
+  var startBtn=document.getElementById('drillStart');
+  var pairSel=document.getElementById('pairSelect');
+  if(display&&resetDisplay){ display.className='timer-display'; display.textContent='1:00'; }
+  if(result) result.style.display='none';
+  if(startBtn) startBtn.disabled=false;
+  if(pairSel) pairSel.disabled=false;
+}
+function saveDrill(song){
+  var count=parseInt(document.getElementById('changeCount').value,10); if(isNaN(count)||count<0) count=0;
+  if(!drillState.pair) drillState.pair=song.drillPairs[parseInt(document.getElementById('pairSelect').value,10)];
+  addHistoryEntry({ songId:song.id, pair:drillState.pair[0]+' ↔ '+drillState.pair[1], count:count, date:todayISO(), ts:Date.now() });
+  renderProgress(song.id);
+  document.getElementById('drillResult').style.display='none';
+  var display=document.getElementById('timerDisplay'); display.className='timer-display'; display.textContent='1:00';
+}
+
+function boot(){
+  renderSongList();
+  document.getElementById('songList').addEventListener('click', function(e){
+    var btn=e.target.closest('[data-song]'); if(btn) showSong(btn.getAttribute('data-song'));
+  });
+  document.getElementById('backBtn').addEventListener('click', showList);
+}
+boot();
+})();
+</script>
+</body>
+</html>

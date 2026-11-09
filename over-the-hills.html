@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Over the Hills and Far Away — Hard Parts · Gitfiddle</title>
+<style>
+:root{
+  --bg:#0f1115; --surface:#181b22; --surface2:#1e2430; --border:#2e3440;
+  --text:#e8eaed; --muted:#9aa0a6; --accent:#5b9cff; --warn:#f5a524; --danger:#ff6b6b; --ok:#3ecf8e;
+  --radius:12px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+a{color:var(--accent)}
+header.top{padding:18px 16px 8px;max-width:1200px;margin:0 auto}
+header.top .crumb{font-size:13px;color:var(--muted)}
+header.top h1{margin:4px 0 2px;font-size:24px;letter-spacing:.2px}
+header.top .meta{color:var(--muted);font-size:14px}
+main{max-width:1200px;margin:0 auto;padding:8px 12px 80px}
+.banner{border:1px solid var(--warn);background:rgba(245,165,36,.08);color:var(--text);border-radius:var(--radius);padding:10px 14px;margin:10px 0;font-size:14px}
+.banner code{background:#0008;padding:1px 5px;border-radius:5px}
+.howto{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin:8px 0 16px;font-size:14px;color:var(--muted)}
+.howto summary{cursor:pointer;color:var(--text);font-weight:600}
+.howto kbd,.kbd{font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:0 5px;color:var(--text)}
+.jump{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
+.jump a{font-size:13px;text-decoration:none;color:var(--text);background:var(--surface);border:1px solid var(--border);padding:5px 10px;border-radius:999px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin:0 0 18px;scroll-margin-top:10px}
+.card.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.card h2{margin:0;font-size:19px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.num{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-size:14px}
+.diff{font-size:12px;color:var(--warn);letter-spacing:2px}
+.why,.tip{margin:8px 0 0;font-size:14.5px}
+.why b,.tip b{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:11.5px;letter-spacing:.8px;margin-right:6px}
+.tip{border-left:3px solid var(--ok);padding-left:10px}
+.teachers{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px}
+.teachers button{font-size:13px}
+.teachers button.on{background:var(--accent);border-color:var(--accent);color:#06101f}
+.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+/* video stage */
+.stageWrap:fullscreen{aspect-ratio:auto;border-radius:0}
+.stageWrap{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;touch-action:none}
+.stage{position:absolute;inset:0;transition:transform .15s}
+.stage.mirror{transform:scaleX(-1)}
+.zoomer{position:absolute;inset:0;transform-origin:0 0;transition:transform .2s ease}
+.zoomer iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.facade{position:absolute;inset:0;display:grid;place-items:center;background:#000 center/cover no-repeat;cursor:pointer}
+.facade::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 40%,#000c)}
+.facade .play{position:relative;z-index:1;width:74px;height:74px;border-radius:50%;background:#fffffff0;display:grid;place-items:center;box-shadow:0 6px 30px #000a}
+.facade .play::before{content:"";border-left:24px solid #111;border-top:15px solid transparent;border-bottom:15px solid transparent;margin-left:6px}
+.facade .cap{position:absolute;left:12px;bottom:10px;z-index:1;font-size:13px;color:#fff}
+.panLayer{position:absolute;inset:0;cursor:grab;display:none;z-index:3}
+.panLayer.on{display:block}
+.panLayer:active{cursor:grabbing}
+.overlay{position:absolute;inset:0;display:none;place-items:center;z-index:4;pointer-events:none;background:#0007}
+.overlay.on{display:grid}
+.overlay span{font-size:64px;font-weight:800;color:#fff;text-shadow:0 4px 20px #000}
+.hud{position:absolute;left:8px;top:8px;z-index:5;display:flex;gap:6px;pointer-events:none}
+.hud span{background:#000b;color:#fff;font-size:12px;padding:3px 7px;border-radius:6px;font-family:var(--mono)}
+.err{position:absolute;inset:0;z-index:6;display:none;place-items:center;text-align:center;padding:20px;background:#000e;color:#fff;font-size:14px}
+.err.on{display:grid}
+/* progress */
+.bar{position:relative;height:26px;margin:10px 0 4px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);cursor:pointer;user-select:none;touch-action:none}
+.bar .range{position:absolute;top:0;bottom:0;background:rgba(91,156,255,.22);border-left:2px solid var(--accent);border-right:2px solid var(--accent)}
+.bar .head{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--warn)}
+.bar .lab{position:absolute;top:4px;font-size:11px;color:var(--muted);font-family:var(--mono)}
+/* controls */
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.row .lbl{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;min-width:52px}
+button,.btn{appearance:none;font:inherit;font-size:14px;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 11px;min-height:38px;cursor:pointer;touch-action:manipulation}
+button:hover{border-color:#4a5568}
+button.on{background:var(--warn);border-color:var(--warn);color:#1a1200;font-weight:600}
+button.big{font-size:16px;padding:8px 16px;min-width:92px;font-weight:600}
+button.primary{background:var(--accent);border-color:var(--accent);color:#06101f}
+button.sm{min-height:32px;padding:4px 8px;font-size:13px}
+.time{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.abBox{display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:3px 4px}
+.abBox .v{font-family:var(--mono);font-size:14px;min-width:46px;text-align:center}
+.abBox .k{font-weight:700;color:var(--accent);padding:0 4px}
+select,input[type=number]{font:inherit;font-size:14px;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 6px;min-height:36px}
+input[type=number]{width:66px}
+input[type=range]{accent-color:var(--accent);width:120px}
+.badge{font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-weight:500}
+.badge.cap{border-color:#2f6b52;color:var(--ok)}
+.badge.approx{border-color:var(--warn);color:var(--warn)}
+.status{font-size:13px;color:var(--muted);min-height:18px}
+details.more{margin-top:6px}
+details.more summary{cursor:pointer;font-size:13px;color:var(--muted)}
+/* tab panel */
+.tabPanel{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px}
+.tabPanel h3{margin:0 0 6px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.tabPanel pre{margin:0;font-family:var(--mono);font-size:13px;line-height:1.35;color:#f2f2f2;overflow-x:auto;white-space:pre;padding:6px 0}
+.tabPanel .src{font-size:12px;color:var(--muted);margin-top:8px}
+.tabPanel ul{margin:6px 0 0;padding-left:18px;font-size:13.5px}
+.legend{font-size:12px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
+footer{max-width:1200px;margin:0 auto;padding:0 16px 40px;color:var(--muted);font-size:12.5px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="crumb"><a href="index.html">← Gitfiddle</a> · Hard Parts (prototype)</div>
+  <h1>Over the Hills and Far Away — acoustic intro</h1>
+  <div class="meta">Led Zeppelin · <i>Houses of the Holy</i> (1973) · standard tuning (E A D G B E), no capo · built around G and D with hammer-ons and pull-offs</div>
+</header>
+<main>
+  <div id="fileBanner" class="banner" hidden>
+    <b>Heads up:</b> YouTube often won't play embedded videos on a page opened straight from a file (<code>file://</code>), and you'll see "Error 153". Run it from a tiny local server instead:
+    <code>cd gitfiddle &amp;&amp; python3 -m http.server 8000</code>, then open <code>http://localhost:8000/over-the-hills.html</code>. Hosting it online works too.
+  </div>
+
+  <details class="howto" open>
+    <summary>How this works (30-second version)</summary>
+    <p>Each card is one of the hard bits. The video starts on the teacher's explanation and <b>loops it automatically</b>. Slow it down, zoom in on the hand you need, and let <b>Ladder</b> speed it up a little each time it loops until you're at full speed. Anything you change (loop points, zoom, speed) is saved in this browser.</p>
+    <p>Shortcuts work on the highlighted card: <kbd>Space</kbd> play/pause · <kbd>[</kbd> <kbd>]</kbd> slower/faster · <kbd>L</kbd> loop on/off · <kbd>A</kbd>/<kbd>B</kbd> set loop start/end to now · <kbd>Z</kbd> cycle zoom (full → fret hand → pick hand) · <kbd>M</kbd> mirror · <kbd>F</kbd> full screen · <kbd>←</kbd>/<kbd>→</kbd> jump 2s · <kbd>R</kbd> back to loop start</p>
+    <p>The YouTube controls are hidden so zooming stays clean. Use the buttons below each video instead. When you're zoomed in, <b>drag on the video</b> to move the view. Each zoom preset remembers your adjustment for that clip.</p>
+  </details>
+
+  <nav class="jump" id="jump"></nav>
+  <div id="cards"></div>
+</main>
+<footer>
+  The videos belong to their creators and play through YouTube's official embedded player (ads and creator credit stay in). Loop times came from each lesson's YouTube chapters and captions and may be off by a second or two. Anything marked "approx — adjust" is a best guess, so fix it with the A/B buttons. Tab excerpts are short practice passages transcribed from the teachers' spoken instructions (see the source note on each card).
+</footer>
+
+<script>
+"use strict";
+/* ---------------- DATA ---------------- */
+const VIDEOS = {
+  VnU_bh0dgNU: { teacher: "Marty Music", title: "Led Zeppelin Over The Hills And Far Away Guitar Lesson + Tutorial PART 1",
+    zoom: { fret:{s:2.2,x:0.82,y:0.28}, pick:{s:2.2,x:0.13,y:0.45} } },
+  I13VEEkqeLI: { teacher: "GuitarJamz", title: "Led Zeppelin - Over the Hills and Far Away - Acoustic Guitar lesson - How to Play",
+    zoom: { fret:{s:2.2,x:0.84,y:0.42}, pick:{s:2.2,x:0.15,y:0.50} } },
+  WbkcYKKIh90: { teacher: "GuitarLessons365 (Carl Brown)", title: "Over The Hills And Far Away Guitar Lesson - Led Zeppelin - Famous Riffs",
+    zoom: { fret:{s:1.9,x:0.78,y:0.76}, pick:{s:2.0,x:0.20,y:0.22} } }
+};
+// timing: "captions" = start/end taken from the lesson's YouTube captions/chapters (±2s). "approx" = best guess, adjust.
+const PARTS = [
+ { id:"lick1", name:"The opening hammer-on / pull-off lick (into G)", diff:3,
+   why:"Three fast notes from a single pick on the open G string (0-2-0), then a pull-off on the D string, and the open strings have to keep ringing. Most teachers play it at full speed right after explaining it.",
+   tip:"Fret with the very tip of your index finger so you don't mute the B string. Pick once, hammer on, then flick the finger off sideways instead of lifting it. Start on Ladder at 0.5x.",
+   clips:[
+     {v:"VnU_bh0dgNU", a:129, b:192, t:"captions", note:"Marty explains it note by note (2:09–3:12)"},
+     {v:"I13VEEkqeLI", a:119, b:206, t:"captions", note:"Breaks it into hammer-on + pull-off + open G (1:59–3:26)"},
+     {v:"WbkcYKKIh90", a:65,  b:123, t:"captions", note:"Carl's version: 'first legato lick' then the G voicing (1:05–2:03)"},
+     {v:"I13VEEkqeLI", a:60,  b:119, t:"captions", note:"Primer: what hammer-ons and pull-offs are (1:00–1:59)", label:"Primer: H/P basics"}
+   ],
+   tabTitle:"Lick 1 → G",
+   tab:
+"      lick 1                 G\n"+
+"e|-------------------|---3---|\n"+
+"B|-------------------|---0---|\n"+
+"G|-0h2p0---------0---|---0---|\n"+
+"D|-------4p0---------|---0---|\n"+
+"A|-------------------|---2---|\n"+
+"E|-------------------|---3---|",
+   notes:["0h2p0 = pick the open G once, hammer onto fret 2, pull off back to open.","Use the G chord with the B string <b>open</b> (320003) and let it ring."]
+ },
+ { id:"lick2", name:"The double pull-off (4-2-0 on the G string) into D", diff:4,
+   why:"Two fingers sit on the G string, ring on fret 4 and index on fret 2, and you pull off twice from one pick. If the second pull-off is weak, the open G gets swallowed.",
+   tip:"Plant both fingers before you pick. Pull the ring finger off downward so it plucks the string, and the index does the same. Loop just this with a 2s count-in until all three notes sound even.",
+   clips:[
+     {v:"VnU_bh0dgNU", a:192, b:270, t:"approx", note:"Marty, 3:12 to about 4:30 (end is a guess)"},
+     {v:"I13VEEkqeLI", a:206, b:292, t:"captions", note:"Explained, then played really slow (3:26–4:52)"},
+     {v:"WbkcYKKIh90", a:123, b:185, t:"captions", note:"Carl: 'second legato pattern' into D (2:03–3:05)"}
+   ],
+   tabTitle:"Lick 2 → D",
+   tab:
+"      lick 2                         D\n"+
+"e|---------------------------|---2---|\n"+
+"B|---------------------------|---3---|\n"+
+"G|-0h2p0-----0-4p2p0---------|---2---|\n"+
+"D|-------4-----------0-------|---0---|\n"+
+"A|---------------------------|---x---|\n"+
+"E|---------------------------|---x---|",
+   notes:["Starts like lick 1, but you pick the open G (don't pull off) after the D-string 4.","4p2p0 = one pick, then two pull-offs."]
+ },
+ { id:"fill", name:"The D-chord fill (rolling one finger across fret 2)", diff:3,
+   why:"It starts on an upbeat, and one finger has to roll between fret 2 on the A string and fret 2 on the D string without the notes running into each other.",
+   tip:"Use one finger (index or ring) flat across the A and D strings at fret 2 and rock it instead of jumping. Count \"1-and\" out loud. The fill starts on the \"and\".",
+   clips:[
+     {v:"VnU_bh0dgNU", a:326, b:366, t:"captions", note:"Marty: 'second fret of the A, open D, second fret of the D…' (5:26–6:06)"},
+     {v:"I13VEEkqeLI", a:329, b:377, t:"captions", note:"'Roll your finger over to the 2nd fret of the A' + real slow (5:29–6:17)"},
+     {v:"WbkcYKKIh90", a:197, b:245, t:"captions", note:"Carl: the fill and the upbeat timing (3:17–4:05)"}
+   ],
+   tabTitle:"D fill → G",
+   tab:
+"   D     fill                        G\n"+
+"e|-2-------------------------|---3---|\n"+
+"B|-3-------------------------|---0---|\n"+
+"G|-2-------------------------|---0---|\n"+
+"D|-0---0-------0-2---0-2-0---|---0---|\n"+
+"A|-------0h2-------2---------|---2---|\n"+
+"E|---------------------------|---3---|",
+   notes:["The teachers each play it a little differently. Carl starts with the open D and open A, and Marty starts from the A string at fret 2. Both end D 0-2-0, then go to G."]
+ },
+ { id:"turn", name:"The Cadd9 → G/B → B♭ turnaround (the stretch)", diff:4,
+   why:"These are chord shapes you won't know yet, there's a reach down to the first fret, and the open strings have to keep ringing through the changes.",
+   tip:"Keep your ring and pinky on fret 3 of the B and high E strings as an anchor through Cadd9 and G/B. Only the bass note moves. Practice the move to B♭ by itself at 0.5x.",
+   clips:[
+     {v:"I13VEEkqeLI", a:420, b:480, t:"captions", note:"Cadd9 → G/B → stretch to fret 1 (7:00–8:00)"},
+     {v:"WbkcYKKIh90", a:280, b:345, t:"captions", note:"Carl: C, then fret 2, then the B♭ shape with open strings (4:40–5:45)"},
+     {v:"VnU_bh0dgNU", a:442, b:545, t:"approx", note:"Marty's 'funky B-flat' live voicing (7:22 to about 9:05)"}
+   ],
+   tabTitle:"Turnaround",
+   tab:
+"     Cadd9 G/B   B♭*     C* (slide up 2)\n"+
+"e|---3-----3-----0-----|---0---|\n"+
+"B|---3-----3-----3-----|---5---|\n"+
+"G|---0-----0-----0-----|---0---|\n"+
+"D|---2-----0-----3-----|---5---|\n"+
+"A|---3-----2-----1-----|---3---|\n"+
+"E|---x-----x-----x-----|---x---|",
+   notes:["B♭* = Carl's open-string shape x13030. Marty's live version is x1x33x (the D and high E strings muted).","C* = the same shape slid up 2 frets, with the open strings still ringing. Mute the low E with the tip of your index finger."]
+ },
+ { id:"together", name:"Putting it together: slow-motion full run", diff:3,
+   why:"Every piece works on its own, but the gaps between pieces (lick → strum → lick) are where the timing falls apart.",
+   tip:"Turn on Ladder here: start at 0.5x with the target at 1.0x. Play along with the teacher's slow run every time it loops.",
+   clips:[
+     {v:"VnU_bh0dgNU", a:372, b:442, t:"captions", note:"Marty: from the top at full speed, then really slow (6:12–7:22, chapter)"},
+     {v:"I13VEEkqeLI", a:273, b:329, t:"captions", note:"Slow, even slower, then regular speed (4:33–5:29)"},
+     {v:"WbkcYKKIh90", a:379, b:429, t:"captions", note:"Carl plays the whole intro very slowly (6:19–7:09)"}
+   ],
+   tabTitle:"Intro roadmap",
+   tab:
+"lick 1 → G      lick 2 → D\n"+
+"lick 1 → G      lick 2 → D (shorter) + fill → G\n"+
+"lick 1 → G      lick 2 → D\n"+
+"lick 1 → Cadd9 → G/B → B♭* → C* (slide)\n"+
+"…then the whole riff starts over",
+   notes:["This order is pieced together from the lessons. Check it against the record, because Page plays it loosely and each pass is a little different."]
+ },
+ { id:"rhythm", name:"The free-form rhythm (when it rushes back to the lick)", diff:2,
+   why:"The intro doesn't sit on a strict grid. After the D chord it goes back to the G lick sooner than you'd expect, so counting along doesn't work.",
+   tip:"Turn off the count-in (set gap to 0) and loop this at 0.75x. Hum the timing first, then play it. Your ear will learn it faster than counting.",
+   clips:[
+     {v:"VnU_bh0dgNU", a:617, b:691, t:"approx", note:"Marty explains the loose timing (about 10:17–11:31)"}
+   ],
+   tabTitle:"What to listen for",
+   tab:
+"D chord ─┐\n"+
+"         └─(short!)─→ lick 1 → G\n"+
+"First half of the phrase: relaxed\n"+
+"Second half: comes back to the G lick quicker",
+   notes:["When the vocals come in, the fill isn't played. It goes straight back to the lick (Marty, around 11:45)."]
+ }
+];
+const TAB_SOURCE = 'Transcribed from the spoken note-by-note instructions in the three lessons above and Claude Johnson\'s lesson transcript at <a href="https://guitarcontrol.com/led-zeppelin-acoustic-guitar-lesson/" target="_blank" rel="noopener">guitarcontrol.com</a>. This is a short excerpt for practice. Check it against the recording.';
+
+/* ---------------- UTIL ---------------- */
+const $ = (s, r=document) => r.querySelector(s);
+const el = (tag, attrs={}, html) => { const e=document.createElement(tag); for (const k in attrs){ if(k==="class") e.className=attrs[k]; else if(k.startsWith("on")) e.addEventListener(k.slice(2), attrs[k]); else e.setAttribute(k, attrs[k]); } if(html!=null) e.innerHTML=html; return e; };
+const fmt = s => { s=Math.max(0,s||0); const m=Math.floor(s/60), r=s-m*60; return m+":"+(r<10?"0":"")+r.toFixed(r%1?1:0).replace(/\.0$/,""); };
+const clamp = (v,a,b) => Math.min(b,Math.max(a,v));
+const r2 = v => Math.round(v*100)/100;
+const LS_PREFIX = "gitfiddle.oth.v1.";
+const load = k => { try { return JSON.parse(localStorage.getItem(LS_PREFIX+k)); } catch(e){ return null; } };
+const save = (k,v) => { try { localStorage.setItem(LS_PREFIX+k, JSON.stringify(v)); } catch(e){} };
+
+let audioCtx = null;
+function beep(freq=880, dur=0.07){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.frequency.value=freq; o.type="square"; g.gain.value=0.06;
+    o.connect(g); g.connect(audioCtx.destination);
+    const t=audioCtx.currentTime; g.gain.setValueAtTime(0.06,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.start(t); o.stop(t+dur+0.02);
+  }catch(e){}
+}
+
+/* ---------------- YT API ---------------- */
+let ytResolve; const ytReady = new Promise(r => ytResolve = r);
+window.onYouTubeIframeAPIReady = () => ytResolve();
+if (location.protocol === "file:") $("#fileBanner").hidden = false;
+
+/* ---------------- CARD ---------------- */
+const cards = [];
+let activeCard = null;
+function setActive(c){ if(activeCard===c) return; if(activeCard) activeCard.root.classList.remove("active"); activeCard=c; c.root.classList.add("active"); }
+
+class Card {
+  constructor(part, idx){
+    this.part = part; this.idx = idx; this.clipIdx = 0; this.player = null; this.ready = false;
+    this.inGap = false; this.loops = 0; this.gapTimer = null;
+    const savedClip = load("clipSel."+part.id); if (savedClip!=null && part.clips[savedClip]) this.clipIdx = savedClip;
+    this.build();
+    this.selectClip(this.clipIdx, false);
+  }
+  key(){ const c=this.part.clips[this.clipIdx]; return this.part.id+"."+this.clipIdx+"."+c.v; }
+  defaults(){
+    const c=this.part.clips[this.clipIdx], z=VIDEOS[c.v].zoom;
+    return { a:c.a, b:c.b, rate:0.75, loop:true, gap:2, beep:true, mirror:false,
+      ladder:{on:false, start:0.5, target:1, step:0.1},
+      zoom:{ mode:"full", fret:{...z.fret}, pick:{...z.pick} } };
+  }
+  loadState(){
+    const d=this.defaults(), s=load(this.key());
+    this.s = s ? {...d, ...s, ladder:{...d.ladder, ...(s.ladder||{})}, zoom:{...d.zoom, ...(s.zoom||{}), fret:{...d.zoom.fret, ...((s.zoom||{}).fret||{})}, pick:{...d.zoom.pick, ...((s.zoom||{}).pick||{})}}} : d;
+  }
+  persist(){ save(this.key(), this.s); }
+
+  build(){
+    const p=this.part;
+    const r = this.root = el("section", {class:"card", id:"part-"+p.id});
+    r.innerHTML = `
+      <h2><span class="num">${this.idx+1}</span>${p.name} <span class="diff" title="difficulty">${"●".repeat(p.diff)}${"○".repeat(5-p.diff)}</span></h2>
+      <p class="why"><b>Why it's hard</b>${p.why}</p>
+      <p class="tip"><b>Tip</b>${p.tip}</p>
+      <div class="teachers"></div>
+      <div class="grid">
+        <div class="vidCol">
+          <div class="stageWrap">
+            <div class="stage"><div class="zoomer"><div class="facade"><div class="play"></div><div class="cap"></div></div></div></div>
+            <div class="panLayer" title="Drag to move the view · tap to play/pause"></div>
+            <div class="overlay"><span></span></div>
+            <div class="hud"><span class="hRate">0.75x</span><span class="hLoop">loop</span></div>
+            <div class="err"><div><div class="errMsg"></div><p><a class="ytLink" target="_blank" rel="noopener">Open on YouTube at this spot ↗</a></p></div></div>
+          </div>
+          <div class="bar"><div class="range"></div><div class="head"></div><span class="lab lA"></span><span class="lab lB"></span></div>
+          <div class="row">
+            <button class="big primary bPlay">▶ Play</button>
+            <button class="bRestart" title="Back to loop start (R)">⏮ A</button>
+            <button class="bLoop" title="Loop on/off (L)">🔁 Loop</button>
+            <span class="time tNow">0:00</span>
+            <span class="badge tBadge"></span>
+          </div>
+          <div class="row"><span class="lbl">Speed</span>
+            <button class="sm sp" data-r="0.25">0.25</button><button class="sm sp" data-r="0.5">0.5</button><button class="sm sp" data-r="0.75">0.75</button><button class="sm sp" data-r="1">1×</button>
+            <button class="sm bSlower" title="Slower ([)">−</button><button class="sm bFaster" title="Faster (])">+</button>
+          </div>
+          <div class="row"><span class="lbl">Ladder</span>
+            <button class="sm bLadder" title="Speeds up by the step each loop until it hits the target">🪜 Slow → fast</button>
+            <label class="time">from <select class="lStart"></select></label>
+            <label class="time">to <select class="lTarget"></select></label>
+            <label class="time">step <select class="lStep"><option value="0.05">+0.05</option><option value="0.1">+0.1</option><option value="0.25">+0.25</option></select></label>
+          </div>
+          <div class="row"><span class="lbl">Loop</span>
+            <span class="abBox"><span class="k">A</span><button class="sm" data-ab="a" data-d="-1">−1s</button><span class="v vA"></span><button class="sm" data-ab="a" data-d="1">+1s</button><button class="sm" data-set="a" title="Set A to now (A)">now</button></span>
+            <span class="abBox"><span class="k">B</span><button class="sm" data-ab="b" data-d="-1">−1s</button><span class="v vB"></span><button class="sm" data-ab="b" data-d="1">+1s</button><button class="sm" data-set="b" title="Set B to now (B)">now</button></span>
+          </div>
+          <div class="row"><span class="lbl">Gap</span>
+            <label class="time">pause between loops <select class="gap"><option value="0">none</option><option value="1">1s</option><option value="2">2s</option><option value="3">3s</option><option value="4">4s</option></select></label>
+            <button class="sm bBeep" title="Count-in clicks during the gap">🔔 Count-in</button>
+          </div>
+          <div class="row"><span class="lbl">Zoom</span>
+            <button class="sm zm" data-z="full">Full</button><button class="sm zm" data-z="fret">✋ Fret hand</button><button class="sm zm" data-z="pick">🎸 Pick hand</button>
+            <button class="sm bMirror" title="Mirror (M), like watching yourself in a mirror">⇋ Mirror</button>
+            <button class="sm bFs" title="Fullscreen (F), keeps zoom and loop">⛶ Full screen</button>
+          </div>
+          <div class="row zoomTune"><span class="lbl">Adjust</span>
+            <button class="sm" data-zs="-0.2">−</button><input type="range" class="zRange" min="1" max="4" step="0.05"><button class="sm" data-zs="0.2">＋</button>
+            <button class="sm" data-pan="-1,0">←</button><button class="sm" data-pan="0,-1">↑</button><button class="sm" data-pan="0,1">↓</button><button class="sm" data-pan="1,0">→</button>
+            <button class="sm bZReset" title="Reset this preset">reset</button>
+          </div>
+          <div class="status"></div>
+          <details class="more"><summary>Clip info / reset</summary>
+            <p class="time cInfo"></p>
+            <button class="sm bResetAll">Reset this clip to the default loop</button>
+          </details>
+        </div>
+        <aside class="tabPanel">
+          <h3>${p.tabTitle}</h3>
+          <pre>${p.tab}</pre>
+          <div class="legend">h = hammer-on · p = pull-off · x = muted / don't play</div>
+          <ul>${p.notes.map(n=>"<li>"+n+"</li>").join("")}</ul>
+          <div class="src">${TAB_SOURCE}</div>
+        </aside>
+      </div>`;
+    const q = s => $(s, r);
+    this.q = q;
+    // teacher tabs
+    const tWrap = q(".teachers");
+    p.clips.forEach((c,i) => {
+      const b = el("button", {class:"sm", onclick:()=>{ this.selectClip(i, true); }}, (c.label || VIDEOS[c.v].teacher));
+      tWrap.appendChild(b);
+    });
+    // ladder selects
+    const rates=[0.25,0.3,0.4,0.5,0.6,0.7,0.75,0.8,0.9,1,1.25,1.5];
+    for (const sel of [q(".lStart"), q(".lTarget")]) rates.forEach(v => sel.appendChild(el("option",{value:v}, v+"x")));
+    // events
+    r.addEventListener("pointerdown", ()=>setActive(this));
+    r.addEventListener("focusin", ()=>setActive(this));
+    q(".facade").addEventListener("click", ()=>{ this.wantPlay=true; this.createPlayer(); });
+    q(".bPlay").onclick = ()=> this.togglePlay();
+    q(".bRestart").onclick = ()=> this.toA(true);
+    q(".bLoop").onclick = ()=> { this.s.loop=!this.s.loop; this.persist(); this.refresh(); };
+    r.querySelectorAll(".sp").forEach(b => b.onclick = ()=> { this.stopLadder(); this.setRate(+b.dataset.r); });
+    q(".bSlower").onclick = ()=> this.stepRate(-1);
+    q(".bFaster").onclick = ()=> this.stepRate(1);
+    q(".bLadder").onclick = ()=> this.toggleLadder();
+    q(".lStart").onchange = e => { this.s.ladder.start=+e.target.value; this.persist(); };
+    q(".lTarget").onchange = e => { this.s.ladder.target=+e.target.value; this.persist(); };
+    q(".lStep").onchange = e => { this.s.ladder.step=+e.target.value; this.persist(); };
+    r.querySelectorAll("[data-ab]").forEach(b => b.onclick = ()=> this.nudgeAB(b.dataset.ab, +b.dataset.d));
+    r.querySelectorAll("[data-set]").forEach(b => b.onclick = ()=> this.setABNow(b.dataset.set));
+    q(".gap").onchange = e => { this.s.gap=+e.target.value; this.persist(); };
+    q(".bBeep").onclick = ()=> { this.s.beep=!this.s.beep; this.persist(); this.refresh(); };
+    r.querySelectorAll(".zm").forEach(b => b.onclick = ()=> { this.s.zoom.mode=b.dataset.z; this.persist(); this.applyZoom(); this.refresh(); });
+    q(".bMirror").onclick = ()=> { this.s.mirror=!this.s.mirror; this.persist(); this.applyZoom(); this.refresh(); };
+    r.querySelectorAll("[data-zs]").forEach(b => b.onclick = ()=> this.adjustZoom(+b.dataset.zs, 0, 0));
+    q(".zRange").oninput = e => { const z=this.curPreset(); if(!z) return; z.s=+e.target.value; this.persist(); this.applyZoom(); };
+    r.querySelectorAll("[data-pan]").forEach(b => b.onclick = ()=> { const [dx,dy]=b.dataset.pan.split(",").map(Number); this.adjustZoom(0, dx*0.03, dy*0.03); });
+    q(".bZReset").onclick = ()=> { const m=this.s.zoom.mode; if(m==="full") return; this.s.zoom[m] = {...VIDEOS[this.part.clips[this.clipIdx].v].zoom[m]}; this.persist(); this.applyZoom(); this.refresh(); };
+    q(".bResetAll").onclick = ()=> { localStorage.removeItem(LS_PREFIX+this.key()); this.loadState(); this.applyZoom(); this.refresh(); if(this.ready){ this.player.setPlaybackRate(this.s.rate); this.toA(false);} };
+    const fsOk = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+    if (!fsOk) q(".bFs").style.display="none";
+    q(".bFs").onclick = ()=> this.toggleFs();
+    this.setupBar();
+    this.setupPan();
+  }
+
+  toggleFs(){
+    const w=this.q(".stageWrap");
+    const cur=document.fullscreenElement||document.webkitFullscreenElement;
+    if (cur) (document.exitFullscreen||document.webkitExitFullscreen).call(document);
+    else (w.requestFullscreen||w.webkitRequestFullscreen).call(w);
+  }
+  selectClip(i, userAction){
+    this.clipIdx = i; save("clipSel."+this.part.id, i);
+    this.destroyPlayer();
+    this.loadState(); this.loops=0;
+    const c=this.part.clips[i], v=VIDEOS[c.v];
+    this.root.querySelectorAll(".teachers button").forEach((b,j)=>b.classList.toggle("on", j===i));
+    const fac = this.q(".facade");
+    fac.style.backgroundImage = `url(https://i.ytimg.com/vi/${c.v}/hqdefault.jpg)`;
+    this.q(".cap").textContent = `${v.teacher} · loop ${fmt(this.s.a)}–${fmt(this.s.b)}`;
+    this.q(".cInfo").innerHTML = `<b>${v.title}</b> by ${v.teacher}<br>${c.note}<br>Default loop ${fmt(c.a)}–${fmt(c.b)} · ${c.t==="captions"?"timed from the lesson's YouTube captions/chapters (±2s)":"approximate, so adjust it with the A/B buttons"}<br><a href="https://www.youtube.com/watch?v=${c.v}&t=${c.a}s" target="_blank" rel="noopener">Open on YouTube ↗</a>`;
+    const badge=this.q(".tBadge"); badge.className="badge tBadge "+(c.t==="captions"?"cap":"approx"); badge.textContent = c.t==="captions" ? "⏱ timed from captions" : "approx — adjust";
+    this.applyZoom(); this.refresh();
+    if (userAction) { this.wantPlay=true; this.createPlayer(); }
+  }
+
+  destroyPlayer(){
+    clearTimeout(this.gapTimer); this.inGap=false; this.q(".overlay").classList.remove("on");
+    if (this.player){ try{ this.player.destroy(); }catch(e){} this.player=null; }
+    this.ready=false;
+    const z=this.q(".zoomer"); z.querySelectorAll("iframe,.ytHost").forEach(n=>n.remove());
+    this.q(".facade").style.display=""; this.q(".err").classList.remove("on");
+  }
+
+  async createPlayer(){
+    if (this.player) return;
+    setActive(this);
+    this.q(".facade").style.display="none";
+    this.status("Loading video…");
+    await ytReady;
+    const c=this.part.clips[this.clipIdx];
+    // Build the iframe ourselves so the referrer policy is set (YouTube needs a referrer or it shows error 153).
+    const ifr = document.createElement("iframe");
+    const origin = location.protocol.startsWith("http") ? "&origin="+encodeURIComponent(location.origin) : "";
+    ifr.src = `https://www.youtube.com/embed/${c.v}?enablejsapi=1&playsinline=1&controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&iv_load_policy=3&start=${Math.floor(this.s.a)}${origin}`;
+    ifr.setAttribute("allow","autoplay; encrypted-media; picture-in-picture; fullscreen");
+    ifr.setAttribute("referrerpolicy","strict-origin-when-cross-origin");
+    ifr.setAttribute("title", VIDEOS[c.v].title);
+    this.q(".zoomer").appendChild(ifr);
+    this.player = new YT.Player(ifr, { events:{
+      onReady: ()=>{ this.ready=true; this.player.setPlaybackRate(this.s.rate); this.player.seekTo(this.s.a,true);
+                     if (this.wantPlay){ this.pauseOthers(); this.player.playVideo(); } this.status(""); this.refresh(); },
+      onStateChange: e => { if (e.data===YT.PlayerState.PLAYING){ this.pauseOthers(); } this.refresh(); },
+      onPlaybackRateChange: e => { this.refresh(); },
+      onError: e => { const m={2:"Invalid video id.",5:"This video can't play in the HTML5 player.",100:"The video was removed or made private.",101:"The owner doesn't allow embedding.",150:"The owner doesn't allow embedding.",153:"YouTube rejected the embed because the page has no referrer. Open this page from http://localhost or a website instead of file://."}[e.data] || ("Player error "+e.data);
+                      this.q(".errMsg").textContent=m; this.q(".ytLink").href=`https://www.youtube.com/watch?v=${c.v}&t=${Math.floor(this.s.a)}s`; this.q(".err").classList.add("on"); }
+    }});
+  }
+  pauseOthers(){ for (const c of cards) if (c!==this && c.ready && c.player.getPlayerState && c.player.getPlayerState()===1){ c.player.pauseVideo(); } }
+  status(t){ this.q(".status").textContent=t; }
+  now(){ return (this.ready && this.player.getCurrentTime) ? this.player.getCurrentTime() : this.s.a; }
+  playing(){ return this.ready && this.player.getPlayerState && this.player.getPlayerState()===1; }
+
+  togglePlay(){
+    setActive(this);
+    if (!this.player){ this.wantPlay=true; this.createPlayer(); return; }
+    if (!this.ready) return;
+    if (this.inGap){ this.cancelGap(); return; }
+    if (this.playing()) this.player.pauseVideo();
+    else { const t=this.now(); if (this.s.loop && (t<this.s.a-0.5 || t>=this.s.b-0.1)) this.player.seekTo(this.s.a,true); this.player.playVideo(); }
+  }
+  toA(play){ if(!this.ready){ this.wantPlay=!!play; this.createPlayer(); return; } this.cancelGap(); this.player.seekTo(this.s.a,true); if(play) this.player.playVideo(); this.refresh(); }
+  cancelGap(){ clearTimeout(this.gapTimer); this.inGap=false; this.q(".overlay").classList.remove("on"); }
+
+  setRate(r, quiet){
+    r = clamp(r2(r), 0.25, 2); this.s.rate=r; this.persist();
+    if (this.ready){ this.player.setPlaybackRate(r);
+      setTimeout(()=>{ if(!this.ready) return; const got=this.player.getPlaybackRate(); if (Math.abs(got-r)>0.01 && !quiet) this.status(`YouTube rounded ${r}x to ${got}x (this video only allows certain speeds)`); else if(!quiet) this.status(""); this.refresh(); }, 350); }
+    this.refresh();
+  }
+  availRates(){ try{ const a=this.player.getAvailablePlaybackRates(); if (a && a.length) return a; }catch(e){} return [0.25,0.5,0.75,1,1.25,1.5,1.75,2]; }
+  stepRate(dir){
+    this.stopLadder();
+    const cur = this.ready ? this.player.getPlaybackRate() : this.s.rate;
+    const av = this.availRates();
+    const fine = av.length > 8; // custom speeds supported
+    let next;
+    if (fine) next = cur + dir*0.05;
+    else { const c = av.filter(v => dir>0 ? v>cur+0.001 : v<cur-0.001); next = c.length ? (dir>0?Math.min(...c):Math.max(...c)) : cur; }
+    this.setRate(next);
+  }
+  ladderNext(){
+    const L=this.s.ladder, cur=this.ready?this.player.getPlaybackRate():this.s.rate;
+    if (cur >= L.target-0.001) return cur;
+    let want = Math.min(L.target, r2(cur + L.step));
+    const av=this.availRates();
+    if (av.length<=8 && !av.some(v=>Math.abs(v-want)<0.001)){ const c=av.filter(v=>v>cur+0.001 && v<=L.target+0.001); want = c.length?Math.min(...c):cur; }
+    return want;
+  }
+  toggleLadder(){
+    const L=this.s.ladder; L.on=!L.on;
+    if (L.on){ if (L.target<=L.start) L.target = Math.min(1.5, r2(L.start+0.5)); this.s.loop=true; this.loops=0; this.setRate(L.start, true); this.toA(true); this.status(`Ladder: ${L.start}x → ${L.target}x, +${L.step} each loop`); }
+    else this.status("");
+    this.persist(); this.refresh();
+  }
+  stopLadder(){ if (this.s.ladder.on){ this.s.ladder.on=false; this.persist(); this.refresh(); } }
+
+  nudgeAB(which, d){
+    const dur = this.ready && this.player.getDuration ? this.player.getDuration() : 99999;
+    if (which==="a") this.s.a = clamp(r2(this.s.a+d), 0, this.s.b-1);
+    else this.s.b = clamp(r2(this.s.b+d), this.s.a+1, dur||99999);
+    this.persist(); this.refresh();
+    if (which==="a" && this.ready && !this.playing()) this.player.seekTo(this.s.a,true);
+  }
+  setABNow(which){
+    if (!this.ready){ this.status("Start the video first"); return; }
+    const t = r2(this.now());
+    if (which==="a"){ this.s.a = Math.min(t, this.s.b-1); } else { this.s.b = Math.max(t, this.s.a+1); }
+    this.persist(); this.refresh(); this.status(`${which.toUpperCase()} set to ${fmt(t)}`);
+  }
+
+  // called by global ticker
+  tick(){
+    if (!this.ready) return;
+    const t=this.now();
+    this.q(".tNow").textContent = fmt(t)+" / loop "+fmt(this.s.a)+"–"+fmt(this.s.b);
+    this.drawBar(t);
+    if (this.s.loop && this.playing() && !this.inGap && t >= this.s.b) this.loopEnd();
+  }
+  loopEnd(){
+    this.loops++;
+    let msg = `Loop ${this.loops}`;
+    if (this.s.ladder.on){ const nr=this.ladderNext(); if (nr!==this.s.rate){ this.setRate(nr, true); } msg += ` · ${r2(nr)}x → ${this.s.ladder.target}x`; if (nr>=this.s.ladder.target-0.001) msg+=" ✓ at target"; }
+    this.status(msg);
+    const gap = this.s.gap;
+    if (gap>0){
+      this.inGap=true; this.player.pauseVideo(); this.player.seekTo(this.s.a,true);
+      const ov=this.q(".overlay"), sp=$("span",ov); ov.classList.add("on");
+      let n=gap;
+      const step=()=>{
+        if (!this.inGap) return;
+        if (n<=0){ ov.classList.remove("on"); this.inGap=false; this.player.playVideo(); return; }
+        sp.textContent = n; if (this.s.beep) beep(n===1?1320:880);
+        n--; this.gapTimer=setTimeout(step, 1000);
+      };
+      step();
+    } else this.player.seekTo(this.s.a,true);
+  }
+
+  setupBar(){
+    const bar=this.q(".bar");
+    const seekFromEvt = e => { if(!this.ready) return; const r=bar.getBoundingClientRect(); const [lo,hi]=this.barRange(); const t=lo+(hi-lo)*clamp((e.clientX-r.left)/r.width,0,1); this.cancelGap(); this.player.seekTo(t,true); };
+    bar.addEventListener("pointerdown", e=>{ bar.setPointerCapture(e.pointerId); seekFromEvt(e); bar._drag=true; });
+    bar.addEventListener("pointermove", e=>{ if(bar._drag) seekFromEvt(e); });
+    bar.addEventListener("pointerup", ()=>{ bar._drag=false; });
+  }
+  barRange(){ const pad=Math.max(5,(this.s.b-this.s.a)*0.15); return [Math.max(0,this.s.a-pad), this.s.b+pad]; }
+  drawBar(t){
+    const [lo,hi]=this.barRange(), w=hi-lo, P=v=>clamp((v-lo)/w*100,0,100)+"%";
+    const rg=this.q(".range"); rg.style.left=P(this.s.a); rg.style.width=((this.s.b-this.s.a)/w*100)+"%";
+    this.q(".head").style.left=P(t==null?this.s.a:t);
+    const la=this.q(".lA"), lb=this.q(".lB"); la.textContent="A "+fmt(this.s.a); la.style.left="calc("+P(this.s.a)+" + 4px)";
+    lb.textContent=fmt(this.s.b)+" B"; lb.style.right="calc("+(100-parseFloat(P(this.s.b)))+"% + 4px)"; lb.style.left="auto";
+    const narrow = (this.s.b-this.s.a)/w < 0.35; la.style.display = lb.style.display = narrow ? "none" : "";
+  }
+
+  curPreset(){ const m=this.s.zoom.mode; return m==="full"?null:this.s.zoom[m]; }
+  adjustZoom(ds, dx, dy){
+    if (this.s.zoom.mode==="full"){ this.s.zoom.mode="fret"; }
+    const z=this.curPreset(); z.s=clamp(r2(z.s+ds),1,4); z.x=clamp(z.x+(this.s.mirror?-dx:dx),0,1); z.y=clamp(z.y+dy,0,1);
+    this.persist(); this.applyZoom(); this.refresh();
+  }
+  applyZoom(){
+    const z=this.curPreset(), zm=this.q(".zoomer");
+    if (!z){ zm.style.transform=""; }
+    else { const S=z.s; const tx=clamp((0.5-z.x*S)*100,(1-S)*100,0), ty=clamp((0.5-z.y*S)*100,(1-S)*100,0);
+           zm.style.transform=`translate(${tx}%,${ty}%) scale(${S})`; }
+    this.q(".stage").classList.toggle("mirror", !!this.s.mirror);
+    this.q(".panLayer").classList.toggle("on", !!z && !!this.player);
+  }
+  setupPan(){
+    const pl=this.q(".panLayer"); let st=null;
+    pl.addEventListener("pointerdown", e=>{ const z=this.curPreset(); if(!z) return; pl.setPointerCapture(e.pointerId); st={x:e.clientX,y:e.clientY,zx:z.x,zy:z.y,moved:false}; this.q(".zoomer").style.transition="none"; });
+    pl.addEventListener("pointermove", e=>{ if(!st) return; const z=this.curPreset(), r=pl.getBoundingClientRect(); let dx=(e.clientX-st.x)/(r.width*z.s), dy=(e.clientY-st.y)/(r.height*z.s); if(Math.abs(e.clientX-st.x)+Math.abs(e.clientY-st.y)>6) st.moved=true; if(this.s.mirror) dx=-dx; z.x=clamp(st.zx-dx,0,1); z.y=clamp(st.zy-dy,0,1); this.applyZoom(); });
+    const end=()=>{ if(!st) return; this.q(".zoomer").style.transition=""; if(!st.moved) this.togglePlay(); else this.persist(); st=null; };
+    pl.addEventListener("pointerup", end); pl.addEventListener("pointercancel", end);
+  }
+
+  refresh(){
+    const s=this.s, q=this.q;
+    const playing=this.playing();
+    q(".bPlay").textContent = this.inGap ? "■ Skip gap" : (playing ? "❚❚ Pause" : "▶ Play");
+    q(".bLoop").classList.toggle("on", s.loop);
+    const actual = this.ready ? this.player.getPlaybackRate() : s.rate;
+    this.root.querySelectorAll(".sp").forEach(b=>b.classList.toggle("on", Math.abs(+b.dataset.r-actual)<0.001));
+    q(".hRate").textContent = r2(actual)+"x";
+    q(".hLoop").textContent = s.loop ? ("loop "+fmt(s.a)+"–"+fmt(s.b)) : "loop off";
+    q(".bLadder").classList.toggle("on", s.ladder.on);
+    q(".lStart").value = String(s.ladder.start); q(".lTarget").value=String(s.ladder.target); q(".lStep").value=String(s.ladder.step);
+    q(".vA").textContent=fmt(s.a); q(".vB").textContent=fmt(s.b);
+    q(".gap").value=String(s.gap);
+    q(".bBeep").classList.toggle("on", s.beep);
+    this.root.querySelectorAll(".zm").forEach(b=>b.classList.toggle("on", b.dataset.z===s.zoom.mode));
+    q(".bMirror").classList.toggle("on", s.mirror);
+    const z=this.curPreset(); q(".zoomTune").style.opacity = z?1:0.45; if (z) q(".zRange").value=z.s;
+    q(".panLayer").classList.toggle("on", !!z && !!this.player);
+    this.drawBar(this.ready?this.now():null);
+  }
+}
+
+/* ---------------- INIT ---------------- */
+const jump=$("#jump"), wrap=$("#cards");
+PARTS.forEach((p,i)=>{ const c=new Card(p,i); cards.push(c); wrap.appendChild(c.root); jump.appendChild(el("a",{href:"#part-"+p.id}, (i+1)+". "+p.name.split(" (")[0])); });
+setActive(cards[0]);
+setInterval(()=>{ for(const c of cards) c.tick(); }, 50);
+
+document.addEventListener("keydown", e=>{
+  if (e.target.closest && e.target.closest("input,select,textarea")) return;
+  if (e.metaKey||e.ctrlKey||e.altKey) return;
+  const c=activeCard; if(!c) return;
+  const k=e.key;
+  const map = {
+    " ":()=>c.togglePlay(), "[":()=>c.stepRate(-1), "]":()=>c.stepRate(1),
+    "l":()=>{ c.s.loop=!c.s.loop; c.persist(); c.refresh(); },
+    "a":()=>c.setABNow("a"), "b":()=>c.setABNow("b"), "r":()=>c.toA(true), "f":()=>c.toggleFs(),
+    "m":()=>{ c.s.mirror=!c.s.mirror; c.persist(); c.applyZoom(); c.refresh(); },
+    "z":()=>{ const o=["full","fret","pick"]; c.s.zoom.mode=o[(o.indexOf(c.s.zoom.mode)+1)%3]; c.persist(); c.applyZoom(); c.refresh(); },
+    "ArrowLeft":()=>{ if(c.ready){ c.cancelGap(); c.player.seekTo(Math.max(0,c.now()-2),true);} },
+    "ArrowRight":()=>{ if(c.ready){ c.cancelGap(); c.player.seekTo(c.now()+2,true);} }
+  };
+  const f = map[k.length===1?k.toLowerCase():k];
+  if (f){ e.preventDefault(); f(); }
+});
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
